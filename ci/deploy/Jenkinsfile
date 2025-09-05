@@ -162,8 +162,8 @@ pipeline {
                     steps {
                         script {
                             sh '''
-                                helm lint ./helm -f config.yml
-                                helm template ./helm -f config.yml
+                                helm lint . -f values/example1.yml
+                                helm template . -f values/example1.yml
                             '''
                         }
                     }
@@ -177,8 +177,8 @@ pipeline {
                         script {
                             withKubeConfig([credentialsId: 'jenkins-k3s']) {
                                 sh '''
-                                    helm install hello-world ./helm \
-                                        -f config.yml \
+                                    helm install test-release1 . \
+                                        -f values/example1.yml \
                                         --kubeconfig kubeconfig.yaml \
                                         --dry-run --debug
                                 '''
