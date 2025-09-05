@@ -1,2 +1,8 @@
+!ci
+!helm
+!.gitignore
+!.gitmodules
+!LICENSE
+!README.md
 
 .idea
