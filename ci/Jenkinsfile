@@ -8,19 +8,19 @@ pipeline {
         ansiColor('xterm')
     }
     environment {
-        REPO_URL = 'https://github.com/KNOSERO/helm_pack.git'
+        REPO_URL = 'https://github.com/KNOSERO/template_service_k3s.git'
         DEFAULT_BRANCH = 'master'
         CREDITS_ID = 'github-token'
         SECRET_WEBHOOK = 'github-secret-webhook'
         ACCOUNT = 'KNOSERO'
-        REPO = 'helm_pack'
-        PIPELINE_NAME = 'helm_pack_validate'
+        REPO = 'template_service_k3s'
+        PIPELINE_NAME = 'template_service_k3s_validate'
     }
     stages {
         stage('Configure Triggers') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'helm_pack_token', variable: 'TOKEN_WEBHOOK')]) {
+                    withCredentials([string(credentialsId: 'template_service_k3s_token', variable: 'TOKEN_WEBHOOK')]) {
                         properties([
                             pipelineTriggers([
                                 [
@@ -162,8 +162,8 @@ pipeline {
                     steps {
                         script {
                             sh '''
-                                helm lint ./helm -f "$(pwd)/config.yml"
-                                helm template ./helm -f "$(pwd)/config.yml"
+                                helm lint ./helm -f config.yml
+                                helm template ./helm -f config.yml
                             '''
                         }
                     }
@@ -178,7 +178,7 @@ pipeline {
                             withKubeConfig([credentialsId: 'jenkins-k3s']) {
                                 sh '''
                                     helm install hello-world ./helm \
-                                        -f "$(pwd)/config.yml" \
+                                        -f config.yml \
                                         --kubeconfig kubeconfig.yaml \
                                         --dry-run --debug
                                 '''
