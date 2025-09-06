@@ -103,5 +103,16 @@ pipeline {
                 }
             }
         }
+        stage('Deploy') {
+            steps {
+                script {
+                    sh '''
+                        helm install hello-world ./helm \
+                            -f config.yml \
+                            --kubeconfig kubeconfig.yaml
+                    '''
+                }
+            }
+        }
     }
 }
