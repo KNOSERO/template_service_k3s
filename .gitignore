@@ -2,7 +2,9 @@
 !helm
 !.gitignore
 !.gitmodules
+!config.yml
 !LICENSE
 !README.md
+
 
 .idea
