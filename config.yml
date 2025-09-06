@@ -12,7 +12,13 @@ service:
 
 ports:
 
+env:
+
 volumes:
+
+configMounts:
+
+configMaps:
 
 ingress:
   hosts:
