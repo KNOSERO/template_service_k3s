@@ -81,35 +81,25 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            parallel {
-                stage('Test Helm Example 1') {
-                    steps {
-                        script {
-                            sh '''
-                                helm lint ./helm -f config.yml
-                                helm template ./helm -f config.yml
-                            '''
-                        }
-                    }
+        stage('Test Lint') {
+            steps {
+                script {
+                    sh '''
+                        helm lint ./helm -f config.yml
+                        helm template ./helm -f config.yml
+                    '''
                 }
             }
         }
-        stage('Dry Run') {
-            parallel {
-                stage('Test Helm Example 1') {
-                    steps {
-                        script {
-                            withKubeConfig([credentialsId: 'jenkins-k3s']) {
-                                sh '''
-                                    helm install hello-world ./helm \
-                                        -f config.yml \
-                                        --kubeconfig kubeconfig.yaml \
-                                        --dry-run --debug
-                                '''
-                            }
-                        }
-                    }
+        stage('Dry Run Test') {
+            steps {
+                script {
+                    sh '''
+                        helm install hello-world ./helm \
+                            -f config.yml \
+                            --kubeconfig kubeconfig.yaml \
+                            --dry-run --debug
+                    '''
                 }
             }
         }
