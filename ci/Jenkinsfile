@@ -162,8 +162,8 @@ pipeline {
                     steps {
                         script {
                             sh '''
-                                helm lint ./helm -f ../config.yml
-                                helm template ./helm -f ../config.yml
+                                helm lint ./helm -f $(pwd)/config.yml
+                                helm template ./helm -f $(pwd)/config.yml
                             '''
                         }
                     }
@@ -178,7 +178,7 @@ pipeline {
                             withKubeConfig([credentialsId: 'jenkins-k3s']) {
                                 sh '''
                                     helm install hello-world ./helm \
-                                        -f ./config.yml \
+                                        -f $(pwd)/config.yml \
                                         --kubeconfig kubeconfig.yaml \
                                         --dry-run --debug
                                 '''
