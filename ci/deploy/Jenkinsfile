@@ -8,114 +8,39 @@ pipeline {
         ansiColor('xterm')
     }
     environment {
-        REPO_URL = 'https://github.com/KNOSERO/helm_pack.git'
+        REPO_URL = 'https://github.com/KNOSERO/template_service_k3s.git'
         DEFAULT_BRANCH = 'master'
         CREDITS_ID = 'github-token'
-        SECRET_WEBHOOK = 'github-secret-webhook'
-        ACCOUNT = 'KNOSERO'
-        REPO = 'helm_pack'
-        PIPELINE_NAME = 'helm_pack_validate'
     }
     stages {
-        stage('Configure Triggers') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'helm_pack_token', variable: 'TOKEN_WEBHOOK')]) {
-                        properties([
-                            pipelineTriggers([
-                                [
-                                    $class: 'GenericTrigger',
-                                    genericVariables: [
-                                        [key: 'PR_ACTION', value: '$.action',                 expressionType: 'JSONPath', defaultValue: ''],
-                                        [key: 'PR_NUMBER', value: '$.number',                 expressionType: 'JSONPath', defaultValue: ''],
-                                        [key: 'PR_SHA',    value: '$.pull_request.head.sha',  expressionType: 'JSONPath', defaultValue: '']
-                                    ],
-                                    token: TOKEN_WEBHOOK,
-                                    printContributedVariables: true,
-                                    printPostContent: false,
-                                    regexpFilterText: '$PR_ACTION',
-                                    regexpFilterExpression: 'opened|reopened|synchronize'
-                                ]
-                            ])
-                        ])
-                    }
-                }
-            }
-        }
-
         stage('Checkout') {
-            parallel {
-                stage('Checkout PR') {
-                    when { expression { (env.PR_ACTION in ['opened','reopened','synchronize']) && env.PR_NUMBER }}
-                    steps {
-                        script {
-                            checkout([$class: 'GitSCM',
-                                userRemoteConfigs: [[
-                                    name: 'origin',
-                                    url: env.REPO_URL,
-                                    credentialsId: env.CREDITS_ID,
-                                    refspec: '+refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/*'
-                                ]],
-                                branches: [[ name: "origin/pr/${env.PR_NUMBER}/merge" ]],
-                                extensions: [
-                                    [$class: 'CloneOption', shallow: true, depth: 25, noTags: true, timeout: 240],
-                                    [$class: 'PruneStaleBranch'],
-                                    [$class: 'CleanBeforeCheckout']
-                                ]
-                            ])
-                        }
-                    }
-                }
-
-                stage('Checkout Manual') {
-                    when { not { expression { env.PR_ACTION in ['opened','reopened','synchronize'] } } }
-                    steps {
-                        checkout([$class: 'GitSCM',
-                            userRemoteConfigs: [[
-                                name: 'origin',
-                                url: env.REPO_URL,
-                                credentialsId: env.CREDITS_ID,
-                                refspec: '+refs/heads/*:refs/remotes/origin/*'
-                            ]],
-                            branches: [[ name: "*/${env.DEFAULT_BRANCH}" ]],
-                            extensions: [
-                                [$class: 'CloneOption', shallow: true, depth: 25, noTags: true, timeout: 240],
-                                [$class: 'PruneStaleBranch'],
-                                [$class: 'CleanBeforeCheckout']
-                            ]
-                        ])
-                    }
-                }
+            steps {
+                checkout([$class: 'GitSCM',
+                    userRemoteConfigs: [[
+                        name: 'origin',
+                        url: env.REPO_URL,
+                        credentialsId: env.CREDITS_ID,
+                        refspec: '+refs/heads/*:refs/remotes/origin/*'
+                    ]],
+                    branches: [[ name: "${env.BRANCH}" ]],
+                    extensions: [
+                        [$class: 'CloneOption', shallow: true, depth: 25, noTags: true, timeout: 240],
+                        [$class: 'PruneStaleBranch'],
+                        [$class: 'CleanBeforeCheckout']
+                    ]
+                ])
             }
         }
 
         stage('Init') {
             parallel {
-                stage('Init Pipeline Status') {
-                    when { expression { (env.PR_ACTION in ['opened','reopened','synchronize']) && env.PR_NUMBER }}
-                    steps {
-                        script {
-                            def sha = env.PR_SHA?.trim() ? env.PR_SHA : env.CHECKOUT_SHA
-                            if (sha?.trim()) {
-                                githubNotify credentialsId: env.CREDITS_ID,
-                                             account: env.ACCOUNT,
-                                             repo: env.REPO,
-                                             sha: "${sha}",
-                                             context: env.PIPELINE_NAME,
-                                             status: 'PENDING',
-                                             description: 'Pipeline started'
-                            }
-                        }
-                    }
-                }
-
                 stage('Init Submodules') {
                     steps {
                         script {
                             sh '''
                                 git config --global url."https://github.com/".insteadOf "git@github.com:"
                                 git submodule sync --recursive
-                                git submodule update --init --recursive
+                                git submodule update --init --recursive --remote
                             '''
                         }
                     }
@@ -162,8 +87,8 @@ pipeline {
                     steps {
                         script {
                             sh '''
-                                helm lint . -f values/example1.yml
-                                helm template . -f values/example1.yml
+                                helm lint ./helm -f config.yml
+                                helm template ./helm -f config.yml
                             '''
                         }
                     }
@@ -177,44 +102,14 @@ pipeline {
                         script {
                             withKubeConfig([credentialsId: 'jenkins-k3s']) {
                                 sh '''
-                                    helm install test-release1 . \
-                                        -f values/example1.yml \
+                                    helm install hello-world ./helm \
+                                        -f config.yml \
                                         --kubeconfig kubeconfig.yaml \
                                         --dry-run --debug
                                 '''
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-    post {
-        success {
-            script {
-                def sha = env.PR_SHA?.trim() ? env.PR_SHA : env.CHECKOUT_SHA
-                if (sha?.trim()) {
-                    githubNotify credentialsId: env.CREDITS_ID,
-                                 account: env.ACCOUNT,
-                                 repo: env.REPO,
-                                 sha: "${sha}",
-                                 context: env.PIPELINE_NAME,
-                                 status: 'SUCCESS',
-                                 description: 'All stages passed ✅'
-                }
-            }
-        }
-        failure {
-            script {
-                def sha = env.PR_SHA?.trim() ? env.PR_SHA : env.CHECKOUT_SHA
-                if (sha?.trim()) {
-                    githubNotify credentialsId: env.CREDITS_ID,
-                                 account: env.ACCOUNT,
-                                 repo: env.REPO,
-                                 sha: "${sha}",
-                                 context: env.PIPELINE_NAME,
-                                 status: 'FAILURE',
-                                 description: 'Pipeline failed ❌'
                 }
             }
         }
