@@ -162,7 +162,7 @@ pipeline {
                     steps {
                         script {
                             sh '''
-                                helm lint ./helm -f ./config.yml
+                                helm lint ./helm -f ./values/example1.yml
                                 helm template ./helm -f ./config.yml
                             '''
                         }
