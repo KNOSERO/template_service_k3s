@@ -12,6 +12,8 @@ service:
 
 ports:
 
+runAsUser: 0
+
 env:
 
 volumes:
