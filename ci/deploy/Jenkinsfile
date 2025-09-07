@@ -81,6 +81,16 @@ pipeline {
             }
         }
 
+        stage('Copy Config') {
+            steps {
+                script {
+                    sh '''
+                        mkdir -p /helm/config && cp -r /config/* /helm/config/
+                    '''
+                }
+            }
+        }
+
         stage('Test Lint') {
             steps {
                 script {
