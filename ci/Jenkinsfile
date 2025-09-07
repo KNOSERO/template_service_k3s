@@ -160,7 +160,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        mkdir -p /helm/config && cp -r /config/* /helm/config/
+                        mkdir -p config && mkdir -p helm/config && cp -r config/* helm/config/
                     '''
                 }
             }
