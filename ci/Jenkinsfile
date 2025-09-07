@@ -180,7 +180,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        helm install hello-world ./helm \
+                        helm upgrade --install hello-world ./helm \
                             -f config.yml \
                             --kubeconfig kubeconfig.yaml \
                             --dry-run --debug
