@@ -10,6 +10,6 @@
 
 ### Main Project
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-blue?logo=github&style=plastic)](https://github.com/KNOSERO/docker_services)
-[![License](https://img.shields.io/github/license/KNOSERO/template_service_k3s?style=plastic)](https://github.com/KNOSERO/docker_services/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/KNOSERO/docker_services?style=plastic)](https://github.com/KNOSERO/docker_services/blob/master/LICENSE)
 
 A repository with configuration files for Docker and Kubernetes-based services.
