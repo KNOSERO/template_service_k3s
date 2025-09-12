@@ -1,3 +1,5 @@
+@Library('jenkins_shared_lib') _
+
 pipeline {
     agent {
         label 'k3s'
@@ -8,27 +10,20 @@ pipeline {
         ansiColor('xterm')
     }
     environment {
-        REPO_URL = 'https://github.com/KNOSERO/template_service_k3s.git'
-        DEFAULT_BRANCH = 'master'
         CREDITS_ID = 'github-token'
     }
     stages {
+        stage('Init ENV') {
+            steps {
+                script {
+                    initEnv()
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
-                    userRemoteConfigs: [[
-                        name: 'origin',
-                        url: env.REPO_URL,
-                        credentialsId: env.CREDITS_ID,
-                        refspec: '+refs/heads/*:refs/remotes/origin/*'
-                    ]],
-                    branches: [[ name: "${env.BRANCH}" ]],
-                    extensions: [
-                        [$class: 'CloneOption', shallow: true, depth: 25, noTags: true, timeout: 240],
-                        [$class: 'PruneStaleBranch'],
-                        [$class: 'CleanBeforeCheckout']
-                    ]
-                ])
+                checkoutBranch("${env.BRANCH}")
             }
         }
 
@@ -37,11 +32,7 @@ pipeline {
                 stage('Init Submodules') {
                     steps {
                         script {
-                            sh '''
-                                git config --global url."https://github.com/".insteadOf "git@github.com:"
-                                git submodule sync --recursive
-                                git submodule update --init --recursive --remote
-                            '''
+                            initSubmodules()
                         }
                     }
                 }
@@ -49,32 +40,7 @@ pipeline {
                 stage('Init K3s config') {
                     steps {
                         script {
-                            withCredentials([
-                                string(credentialsId: 'jenkins-k3s', variable: 'K8S_TOKEN'),
-                                string(credentialsId: 'jenkins-k3s-ca-cert', variable: 'CA_DATA'),
-                                string(credentialsId: 'jenkins-k3s-server-url', variable: 'SERVER')
-                            ]) {
-                                def kubeconfig = "apiVersion: v1\n" +
-                                                 "kind: Config\n" +
-                                                 "clusters:\n" +
-                                                 "- cluster:\n" +
-                                                 "    certificate-authority-data: ${CA_DATA}\n" +
-                                                 "    server: ${SERVER}\n" +
-                                                 "  name: k3s\n" +
-                                                 "contexts:\n" +
-                                                 "- context:\n" +
-                                                 "    cluster: k3s\n" +
-                                                 "    user: jenkins-admin\n" +
-                                                 "    namespace: jenkins\n" +
-                                                 "  name: jenkins-admin@k3s\n" +
-                                                 "current-context: jenkins-admin@k3s\n" +
-                                                 "users:\n" +
-                                                 "- name: jenkins-admin\n" +
-                                                 "  user:\n" +
-                                                 "    token: ${K8S_TOKEN}\n"
-
-                                writeFile file: 'kubeconfig.yaml', text: kubeconfig
-                            }
+                            configureK3s()
                         }
                     }
                 }
